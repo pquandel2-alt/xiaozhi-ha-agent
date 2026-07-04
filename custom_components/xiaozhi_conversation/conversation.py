@@ -23,8 +23,12 @@ from .const import (
     CONF_ACCESS_TOKEN,
     CONF_WEBSOCKET_URL,
     DEFAULT_LANGUAGE,
+    DATA_TTS_CACHE,
+    TTS_CACHE_MAX,
 )
 from .xiaozhi_client import XiaoZhiClient
+from .opus_ogg import frames_to_ogg
+from .util import tts_cache_key
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -83,9 +87,14 @@ class XiaoZhiConversationEntity(ConversationEntity):
         _LOGGER.debug("Processing message: %s (language: %s)", text, language)
 
         try:
-            # Query XiaoZhi
-            response_text = await self.client.query(text)
+            # Query XiaoZhi — returns response text plus its own Opus audio
+            response_text, audio_frames = await self.client.query(text)
             _LOGGER.debug("XiaoZhi response: %s", response_text)
+
+            # Cache the audio keyed by the response text so the XiaoZhi TTS
+            # entity can replay XiaoZhi's own voice for this exact reply.
+            if audio_frames and response_text:
+                self._cache_audio(response_text, audio_frames)
 
         except Exception as err:
             _LOGGER.error("XiaoZhi query failed: %s", err)
@@ -108,3 +117,15 @@ class XiaoZhiConversationEntity(ConversationEntity):
             conversation_id=user_input.conversation_id,
             continue_conversation=False,
         )
+
+    def _cache_audio(self, text: str, frames: list[bytes]) -> None:
+        """Mux Opus frames to Ogg and store for the TTS entity to replay."""
+        ogg = frames_to_ogg(frames)
+        if ogg is None:
+            return
+        cache: dict[str, bytes] = self.hass.data[DOMAIN][DATA_TTS_CACHE]
+        cache[tts_cache_key(text)] = ogg
+        # Evict oldest entries to bound memory usage.
+        while len(cache) > TTS_CACHE_MAX:
+            cache.pop(next(iter(cache)))
+        _LOGGER.debug("Cached %d bytes of Ogg Opus for TTS replay", len(ogg))

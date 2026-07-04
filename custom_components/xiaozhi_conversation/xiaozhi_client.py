@@ -37,8 +37,13 @@ class XiaoZhiClient:
         self.access_token = access_token
         self.websocket_url = websocket_url
 
-    async def query(self, text: str) -> str:
-        """Send a text query to XiaoZhi and get response."""
+    async def query(self, text: str) -> tuple[str, list[bytes]]:
+        """Send a text query to XiaoZhi.
+
+        Returns a tuple of (response_text, opus_audio_frames). The audio frames
+        are the raw Opus packets XiaoZhi streams back in its own voice; callers
+        that only need text can ignore the second element.
+        """
         headers = {
             "Authorization": f"Bearer {self.access_token}",
             "Protocol-Version": PROTOCOL_VERSION,
@@ -98,8 +103,8 @@ class XiaoZhiClient:
 
         raise RuntimeError("Handshake failed: no hello response from server")
 
-    async def _query_text(self, ws, session_id: str, text: str) -> str:
-        """Send text query and collect response."""
+    async def _query_text(self, ws, session_id: str, text: str) -> tuple[str, list[bytes]]:
+        """Send text query and collect both the response text and Opus audio."""
         listen_message = {
             "session_id": session_id,
             "type": "listen",
@@ -109,12 +114,17 @@ class XiaoZhiClient:
         await ws.send(json.dumps(listen_message))
 
         response_parts = []
+        audio_frames: list[bytes] = []
+        collecting_audio = False
         response_complete = False
 
         try:
             async with asyncio.timeout(WEBSOCKET_TIMEOUT):
                 async for msg in ws:
                     if isinstance(msg, bytes):
+                        # Raw Opus audio frame (Protocol-Version 1 sends them bare)
+                        if collecting_audio:
+                            audio_frames.append(msg)
                         continue
 
                     data = json.loads(msg)
@@ -125,9 +135,12 @@ class XiaoZhiClient:
                         _LOGGER.debug("STT recognized: %s", recognized_text)
 
                     elif msg_type == "tts":
-                        # TTS message contains LLM response text
+                        # TTS message contains LLM response text + audio state
                         state = data.get("state")
                         response_text = data.get("text")
+
+                        if state == "start":
+                            collecting_audio = True
 
                         if response_text:
                             response_parts.append(response_text)
@@ -149,11 +162,13 @@ class XiaoZhiClient:
         except asyncio.TimeoutError:
             _LOGGER.error("Response collection timeout")
             if response_parts:
-                return "".join(response_parts)
+                return "".join(response_parts), audio_frames
             raise RuntimeError("Timeout waiting for response from XiaoZhi")
 
         if not response_complete or not response_parts:
             _LOGGER.warning("Response not complete, got parts: %s", response_parts)
-            return "".join(response_parts) if response_parts else "No response from XiaoZhi"
+            text_out = "".join(response_parts) if response_parts else "No response from XiaoZhi"
+            return text_out, audio_frames
 
-        return "".join(response_parts)
+        _LOGGER.debug("Collected %d Opus audio frames", len(audio_frames))
+        return "".join(response_parts), audio_frames

@@ -24,3 +24,10 @@ FRAME_DURATION = 60
 WEBSOCKET_TIMEOUT = 30
 WEBSOCKET_MESSAGE_SIZE = 10 * 1024 * 1024
 WEBSOCKET_PING_INTERVAL = 20
+
+# Shared cache: response-text -> Ogg Opus bytes (XiaoZhi voice replay)
+DATA_TTS_CACHE = "tts_cache"
+TTS_CACHE_MAX = 32
+
+# Languages the XiaoZhi TTS entity advertises to the Assist pipeline
+TTS_LANGUAGES = ["de", "de-DE", "zh", "zh-CN", "en", "en-US"]
