@@ -1,0 +1,16 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "XiaoZhi Conversation Agent",
+        "description": "Configure XiaoZhi AI as your Home Assistant Conversation Agent",
+        "data": {
+          "device_id": "Device ID (MAC address)",
+          "client_id": "Client ID (UUID)",
+          "access_token": "Access Token",
+          "websocket_url": "WebSocket URL"
+        }
+      }
+    }
+  }
+}
