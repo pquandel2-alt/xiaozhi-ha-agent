@@ -1,13 +1,10 @@
 /* Service worker: cache the app shell so the PWA launches instantly and
  * survives brief offline moments. The WebSocket (live audio) is never cached. */
-const CACHE = "xiaozhi-live-v2";
+const CACHE = "xiaozhi-live-v3";
 const ASSETS = [
-  "./",
-  "index.html",
   "styles.css",
   "app.js",
   "ogg.js",
-  "manifest.webmanifest",
   "vendor/recorder.min.js",
   "vendor/encoderWorker.min.js",
   "vendor/opus-decoder.min.js",
@@ -31,6 +28,9 @@ self.addEventListener("activate", (e) => {
 self.addEventListener("fetch", (e) => {
   const url = new URL(e.request.url);
   if (url.pathname.endsWith("/xiaozhi_live/ws")) return; // never intercept the WS
+  // Never cache the manifest: it carries the per-install token in start_url,
+  // and a cache-first hit here would silently mask that token forever.
+  if (url.pathname.endsWith("manifest.webmanifest")) return;
   if (e.request.method !== "GET") return;
   e.respondWith(
     caches.match(e.request).then((hit) => hit || fetch(e.request).then((res) => {

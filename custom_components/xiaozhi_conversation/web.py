@@ -130,7 +130,11 @@ class XiaoZhiManifestView(HomeAssistantView):
             manifest = json.load(f)
         token = self._entry.data.get(CONF_WEB_TOKEN)
         manifest["start_url"] = f"./?k={token}"
-        return web.json_response(manifest, content_type="application/manifest+json")
+        return web.json_response(
+            manifest,
+            content_type="application/manifest+json",
+            headers={"Cache-Control": "no-store"},
+        )
 
 
 class XiaoZhiWSProxyView(HomeAssistantView):
