@@ -11,6 +11,7 @@ the generated link (opened once from within authenticated HA) can use it.
 """
 
 import asyncio
+import json
 import logging
 import os
 
@@ -56,6 +57,13 @@ async def async_setup_web(hass: HomeAssistant, entry: ConfigEntry) -> None:
     # the static resource registered below.
     hass.http.register_view(XiaoZhiIndexView())
 
+    # iOS/Android drop the "?k=" query string on every home-screen launch and
+    # instead open the manifest's start_url, so the token must be embedded
+    # server-side into start_url — otherwise every standalone launch would
+    # hit the token-entry fallback screen. Served dynamically (per entry)
+    # for the same exact-path-wins-over-static reason as the index view.
+    hass.http.register_view(XiaoZhiManifestView(entry))
+
     # Serve the PWA assets (plain HTML/JS/wasm, no secrets) as static files.
     await hass.http.async_register_static_paths(
         [StaticPathConfig(FRONTEND_URL_PATH, FRONTEND_DIR, cache_headers=False)]
@@ -100,6 +108,29 @@ class XiaoZhiIndexView(HomeAssistantView):
 
     async def get(self, request: web.Request) -> web.FileResponse:
         return web.FileResponse(os.path.join(FRONTEND_DIR, "index.html"))
+
+
+class XiaoZhiManifestView(HomeAssistantView):
+    """Serve manifest.webmanifest with the access token baked into start_url.
+
+    Safari/Chrome open the manifest's start_url (not the last-viewed URL) on
+    every home-screen-icon launch, stripping any "?k=" the original link
+    had. Embedding the token here means standalone launches always carry it.
+    """
+
+    url = f"{FRONTEND_URL_PATH}/manifest.webmanifest"
+    name = "xiaozhi_live:manifest"
+    requires_auth = False
+
+    def __init__(self, entry: ConfigEntry) -> None:
+        self._entry = entry
+
+    async def get(self, request: web.Request) -> web.Response:
+        with open(os.path.join(FRONTEND_DIR, "manifest.webmanifest"), encoding="utf-8") as f:
+            manifest = json.load(f)
+        token = self._entry.data.get(CONF_WEB_TOKEN)
+        manifest["start_url"] = f"./?k={token}"
+        return web.json_response(manifest, content_type="application/manifest+json")
 
 
 class XiaoZhiWSProxyView(HomeAssistantView):

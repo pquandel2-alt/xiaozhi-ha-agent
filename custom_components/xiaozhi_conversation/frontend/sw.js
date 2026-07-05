@@ -1,6 +1,6 @@
 /* Service worker: cache the app shell so the PWA launches instantly and
  * survives brief offline moments. The WebSocket (live audio) is never cached. */
-const CACHE = "xiaozhi-live-v1";
+const CACHE = "xiaozhi-live-v2";
 const ASSETS = [
   "./",
   "index.html",

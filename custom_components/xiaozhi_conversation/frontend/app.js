@@ -45,13 +45,15 @@
 
   function setupFallback() {
     const box = $("setup");
+    const err = $("setupError");
     box.hidden = false;
     $("setupSave").onclick = () => {
       const v = $("setupLink").value.trim();
-      try {
-        const t = new URL(v).searchParams.get("k") || v;
-        if (t) { localStorage.setItem("xz_token", t); location.href = "./"; }
-      } catch (_) { if (v) { localStorage.setItem("xz_token", v); location.href = "./"; } }
+      if (!v) { err.textContent = "Bitte zuerst den Link einfügen."; err.hidden = false; return; }
+      let t = v;
+      try { t = new URL(v).searchParams.get("k") || v; } catch (_) { /* not a full URL, use as-is */ }
+      localStorage.setItem("xz_token", t);
+      location.href = "./";
     };
   }
 

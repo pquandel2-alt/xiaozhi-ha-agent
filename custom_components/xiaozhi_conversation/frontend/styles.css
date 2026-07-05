@@ -87,3 +87,4 @@ body[data-state="speaking"]  #mic { background: var(--user); }
   width: 100%; padding: 12px; border: none; border-radius: 10px;
   background: var(--accent); color: #04150d; font-weight: 700; font-size: 16px; cursor: pointer;
 }
+#setup .error { color: var(--danger); font-size: 13px; margin: -6px 0 12px; }
