@@ -49,6 +49,13 @@ async def async_setup_web(hass: HomeAssistant, entry: ConfigEntry) -> None:
         return
     hass.data[DOMAIN][DATA_WEB_REGISTERED] = True
 
+    # aiohttp's static handler 403s on a bare directory request (no filename),
+    # which is exactly what "/xiaozhi_live/" is. Register an explicit index
+    # view *first* so it wins the exact-path match; asset requests with a
+    # real filename (styles.css, app.js, icons/...) still fall through to
+    # the static resource registered below.
+    hass.http.register_view(XiaoZhiIndexView())
+
     # Serve the PWA assets (plain HTML/JS/wasm, no secrets) as static files.
     await hass.http.async_register_static_paths(
         [StaticPathConfig(FRONTEND_URL_PATH, FRONTEND_DIR, cache_headers=False)]
@@ -76,6 +83,23 @@ async def async_setup_web(hass: HomeAssistant, entry: ConfigEntry) -> None:
         notification_id="xiaozhi_live_link",
     )
     _LOGGER.info("XiaoZhi Live Voice PWA available at %s", link)
+
+
+class XiaoZhiIndexView(HomeAssistantView):
+    """Serve index.html for the bare app URL (with or without trailing slash).
+
+    aiohttp's static file resource 403s when the resolved path is a
+    directory (no index-file fallback), so the app's entry URL needs its
+    own explicit route instead of relying on the static path for "".
+    """
+
+    url = FRONTEND_URL_PATH
+    extra_urls = [f"{FRONTEND_URL_PATH}/"]
+    name = "xiaozhi_live:index"
+    requires_auth = False
+
+    async def get(self, request: web.Request) -> web.FileResponse:
+        return web.FileResponse(os.path.join(FRONTEND_DIR, "index.html"))
 
 
 class XiaoZhiWSProxyView(HomeAssistantView):
