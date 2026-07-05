@@ -75,6 +75,45 @@ This allows XiaoZhi to:
 - Query entity states (temperatures, device status, etc.)
 - Call services (turn lights on/off, set temperatures, etc.)
 
+## Live Voice App (Gemini-Live-style, on your phone)
+
+Since v0.3.0 the integration also serves a **Progressive Web App** for continuous,
+hands-free voice conversation — a home-screen icon on your phone that opens a
+full-screen voice assistant.
+
+### How it works
+
+```
+iPhone PWA  <->  Home Assistant (WebSocket proxy)  <->  XiaoZhi Cloud
+```
+
+The browser cannot set the custom headers XiaoZhi requires, so the audio is
+relayed through a WebSocket proxy **inside Home Assistant** (which also keeps your
+device credentials server-side). Voice streams full-duplex to XiaoZhi; smart-home
+control still flows through HA via the MCP bridge. It uses client-side voice
+activity detection (VAD) for natural turn-taking.
+
+### Setup
+
+1. After installing/updating to v0.3.0 and restarting, open **Settings →
+   Notifications** in Home Assistant — a notification **"XiaoZhi Live Voice"**
+   contains your personal app link (with an access token).
+2. Open that link on your phone **in Safari** (iOS) or Chrome (Android).
+3. Tap **Share → Add to Home Screen**. An app icon appears.
+4. Launch it, allow microphone access, tap the mic button and start talking.
+
+The link's `?k=` token is saved in the app on first launch, so later launches from
+the home-screen icon work without it. Requires HTTPS (needed for microphone
+access) — e.g. via Nabu Casa or a Cloudflare/reverse-proxy setup.
+
+### Notes & limitations
+
+- **Turn-taking, not barge-in:** the mic closes while the assistant speaks (avoids
+  echo); tap the button to interrupt and talk again.
+- **HTTPS is mandatory** for microphone access in the browser.
+- The Opus encoding/decoding runs in-browser via WebAssembly (bundled, no CDN).
+- Tested to work with the XiaoZhi public cloud (`api.tenclass.net`).
+
 ## Troubleshooting
 
 ### "Connection refused" or "Timeout"

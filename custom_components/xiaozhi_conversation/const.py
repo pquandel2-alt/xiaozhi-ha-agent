@@ -31,3 +31,17 @@ TTS_CACHE_MAX = 32
 
 # Languages the XiaoZhi TTS entity advertises to the Assist pipeline
 TTS_LANGUAGES = ["de", "de-DE", "zh", "zh-CN", "en", "en-US"]
+
+# --- Live voice web app (PWA served + WebSocket proxy through HA) ---
+CONF_WEB_TOKEN = "web_token"
+FRONTEND_URL_PATH = "/xiaozhi_live"          # static PWA assets
+WS_PROXY_PATH = "/xiaozhi_live/ws"           # browser <-> HA <-> XiaoZhi relay
+DATA_WEB_REGISTERED = "web_registered"
+
+# XiaoZhi hello frame the proxy/clients use (kept here so both sides agree)
+HELLO_AUDIO_PARAMS = {
+    "format": AUDIO_FORMAT,
+    "sample_rate": SAMPLE_RATE,
+    "channels": CHANNELS,
+    "frame_duration": FRAME_DURATION,
+}

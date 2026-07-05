@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover, user-scalable=no" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="XiaoZhi" />
+  <meta name="theme-color" content="#0b0f14" />
+  <title>XiaoZhi Live</title>
+  <link rel="manifest" href="manifest.webmanifest" />
+  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div id="app">
+    <header id="topbar">
+      <span id="title">XiaoZhi Live</span>
+      <span id="conn" class="dot" title="Verbindung"></span>
+    </header>
+
+    <main id="transcript" aria-live="polite"></main>
+
+    <div id="status">Tippen zum Sprechen</div>
+
+    <footer id="controls">
+      <button id="mic" aria-label="Sprechen">
+        <svg viewBox="0 0 24 24" width="42" height="42" aria-hidden="true">
+          <path d="M12 15a3 3 0 0 0 3-3V6a3 3 0 0 0-6 0v6a3 3 0 0 0 3 3z"/>
+          <path d="M19 11a7 7 0 0 1-14 0M12 18v3"/>
+        </svg>
+      </button>
+    </footer>
+
+    <!-- One-time token entry fallback (if launched without ?k= and no saved token) -->
+    <div id="setup" hidden>
+      <div class="card">
+        <h2>Einmalige Einrichtung</h2>
+        <p>Öffne den Link aus der Home-Assistant-Benachrichtigung „XiaoZhi Live Voice“, oder füge ihn hier ein:</p>
+        <input id="setupLink" type="text" placeholder="https://…/xiaozhi_live/?k=…" />
+        <button id="setupSave">Speichern</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="vendor/recorder.min.js"></script>
+  <script src="vendor/opus-decoder.min.js"></script>
+  <script src="ogg.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
