@@ -290,11 +290,13 @@
 
   // ---------- Boot ----------
   token = resolveToken();
-  if (!token) { setupFallback(); }
-  else {
-    setState("idle");
-    if ("serviceWorker" in navigator) {
-      navigator.serviceWorker.register("sw.js").catch(() => {});
-    }
+  // Stop registering the service worker going forward, and unregister any
+  // worker/cache a prior version left behind — that cache-first behavior is
+  // exactly what made every earlier fix invisible on already-installed
+  // devices. iOS's "Add to Home Screen" doesn't need a service worker.
+  if ("serviceWorker" in navigator) {
+    navigator.serviceWorker.getRegistrations().then((regs) => regs.forEach((r) => r.unregister()));
   }
+  if (!token) { setupFallback(); }
+  else { setState("idle"); }
 })();
