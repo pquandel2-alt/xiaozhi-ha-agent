@@ -47,6 +47,10 @@
     const box = $("setup");
     const err = $("setupError");
     box.hidden = false;
+    // Debug: shows exactly which URL this launch actually loaded, so we can
+    // tell apart "token missing from the URL" vs. "token present but unread".
+    $("setupDebug").textContent = "Geladene URL: " + location.href
+      + " | standalone: " + (window.matchMedia("(display-mode: standalone)").matches || window.navigator.standalone);
     $("setupSave").onclick = () => {
       const v = $("setupLink").value.trim();
       if (!v) { err.textContent = "Bitte zuerst den Link einfügen."; err.hidden = false; return; }
