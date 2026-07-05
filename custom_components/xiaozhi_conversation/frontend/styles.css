@@ -89,3 +89,10 @@ body[data-state="speaking"]  #mic { background: var(--user); }
 }
 #setup .error { color: var(--danger); font-size: 13px; margin: -6px 0 12px; }
 #setup .debug { color: var(--muted); font-size: 11px; margin: 14px 0 0; word-break: break-all; font-family: ui-monospace, monospace; }
+
+#jsErr {
+  position: fixed; top: 0; left: 0; right: 0; z-index: 9999;
+  background: var(--danger); color: #fff; font-size: 12px;
+  padding: 10px 14px; word-break: break-all;
+  padding-top: calc(10px + env(safe-area-inset-top));
+}

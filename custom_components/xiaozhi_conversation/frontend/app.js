@@ -35,6 +35,17 @@
   const $ = (id) => document.getElementById(id);
   const micBtn = $("mic"), statusEl = $("status"), transcript = $("transcript"), connDot = $("conn");
 
+  // ---------- On-screen error reporting (no remote devtools on iOS) ----------
+  function reportError(msg) {
+    const el = document.getElementById("jsErr");
+    if (el) { el.hidden = false; el.textContent = "Fehler: " + msg; }
+    console.error(msg);
+  }
+  window.addEventListener("error", (e) => reportError(e.message + " (" + e.filename + ":" + e.lineno + ")"));
+  window.addEventListener("unhandledrejection", (e) => {
+    reportError(e.reason && e.reason.message ? e.reason.message : String(e.reason));
+  });
+
   // ---------- Token ----------
   function resolveToken() {
     const u = new URL(location.href);
@@ -45,19 +56,30 @@
 
   function setupFallback() {
     const box = $("setup");
-    const err = $("setupError");
+    if (!box) { reportError("setup UI element missing from page"); return; }
     box.hidden = false;
     // Debug: shows exactly which URL this launch actually loaded, so we can
     // tell apart "token missing from the URL" vs. "token present but unread".
-    $("setupDebug").textContent = "Geladene URL: " + location.href
-      + " | standalone: " + (window.matchMedia("(display-mode: standalone)").matches || window.navigator.standalone);
-    $("setupSave").onclick = () => {
-      const v = $("setupLink").value.trim();
-      if (!v) { err.textContent = "Bitte zuerst den Link einfügen."; err.hidden = false; return; }
+    const dbg = $("setupDebug");
+    if (dbg) {
+      dbg.textContent = "Geladene URL: " + location.href
+        + " | standalone: " + (window.matchMedia("(display-mode: standalone)").matches || window.navigator.standalone);
+    }
+    const err = $("setupError");
+    const linkInput = $("setupLink");
+    const saveBtn = $("setupSave");
+    if (!saveBtn || !linkInput) { reportError("setup form elements missing from page"); return; }
+    // Resolve immediately and unhide the app — no reload, no re-derivation
+    // through resolveToken() on a fresh navigation (one less moving part).
+    saveBtn.onclick = () => {
+      const v = linkInput.value.trim();
+      if (!v) { if (err) { err.textContent = "Bitte zuerst den Link einfügen."; err.hidden = false; } return; }
       let t = v;
       try { t = new URL(v).searchParams.get("k") || v; } catch (_) { /* not a full URL, use as-is */ }
+      token = t;
       localStorage.setItem("xz_token", t);
-      location.href = "./";
+      box.hidden = true;
+      setState("idle");
     };
   }
 
